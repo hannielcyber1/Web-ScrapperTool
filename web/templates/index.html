@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrapling — Web Scraping Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .tab-btn.active {
+      border-color: #6366f1;
+      color: #6366f1;
+      background-color: rgba(99, 102, 241, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-spider text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-bold text-lg text-white tracking-tight">Scrapling Studio</h1>
+            <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">Adaptive PDF / Excel</span>
+          </div>
+          <p class="text-xs text-slate-400">Intelligent Web Scraper powered by D4Vinci/Scrapling</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <a href="https://github.com/d4vinci/Scrapling" target="_blank" class="text-xs flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-slate-700">
+          <i class="fa-brands fa-github text-sm"></i>
+          <span>GitHub Docs</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">
+
+    <!-- Input Form Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <form id="scrapeForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Website URL</label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                <i class="fa-solid fa-globe"></i>
+              </span>
+              <input type="text" id="targetUrl" required
+                placeholder="e.g. quotes.toscrape.com or https://news.ycombinator.com"
+                class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-sm transition font-mono">
+            </div>
+
+            <div class="flex items-center gap-2">
+              <select id="scrapeMode" class="bg-slate-950 border border-slate-700 text-slate-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-indigo-500 transition">
+                <option value="fast">⚡ Fast HTTP (TLS Impersonation)</option>
+                <option value="stealth">🕵️ Stealth Browser (JS / Anti-bot)</option>
+              </select>
+
+              <button type="submit" id="scrapeBtn"
+                class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 font-semibold text-white rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition cursor-pointer min-w-[140px]">
+                <i class="fa-solid fa-bolt" id="btnIcon"></i>
+                <span id="btnText">Scrape Site</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Sample Pills -->
+        <div class="flex items-center flex-wrap gap-2 pt-1 text-xs text-slate-400">
+          <span class="text-slate-500">Try sample:</span>
+          <button type="button" onclick="setSample('https://www.w3schools.com/html/html_tables.asp', '')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-emerald-300 transition border border-emerald-900/60 font-medium">📊 HTML Tables (Excel target)</button>
+          <button type="button" onclick="setSample('https://quotes.toscrape.com', '.quote .text::text')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-indigo-300 transition border border-indigo-900/60 font-medium">📋 Structured Records (Excel target)</button>
+          <button type="button" onclick="setSample('https://en.wikipedia.org/wiki/Web_scraping', '')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-sky-300 transition border border-sky-900/60 font-medium">📑 Long Article (PDF target)</button>
+          <button type="button" onclick="setSample('https://news.ycombinator.com', '.titleline > a')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-amber-300 transition border border-amber-900/60 font-medium">📰 News Feed</button>
+        </div>
+
+        <!-- Collapsible Advanced Query Options -->
+        <details class="group border border-slate-800 bg-slate-950/50 rounded-xl p-3 transition">
+          <summary class="cursor-pointer text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between select-none">
+            <span class="flex items-center space-x-2">
+              <i class="fa-solid fa-sliders text-indigo-400"></i>
+              <span>Targeted Selectors & Output Mode Options</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-500 group-open:rotate-180 transition"></i>
+          </summary>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 mt-2 border-t border-slate-800/80">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Custom CSS Selector (e.g. <code class="text-indigo-400">.quote</code> or <code class="text-indigo-400">table.data</code>)</label>
+              <input type="text" id="customCss" placeholder=".item-title, h2, article.card"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:border-indigo-500 focus:outline-none font-mono">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Adaptive File Creation Preference</label>
+              <select id="exportFormatPref" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:border-indigo-500 focus:outline-none">
+                <option value="auto">⚡ Auto-Detect (Excel for tables / PDF for articles)</option>
+                <option value="excel">📊 Force Excel Spreadsheet (.xlsx)</option>
+                <option value="pdf">📄 Force PDF Document (.pdf)</option>
+                <option value="both">✨ Generate Both Excel & PDF</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Browser Impersonation Signature</label>
+              <select id="impersonateSig" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:border-indigo-500 focus:outline-none">
+                <option value="chrome">Chrome (Default)</option>
+                <option value="firefox">Firefox</option>
+                <option value="safari">Safari</option>
+                <option value="edge">Edge</option>
+              </select>
+            </div>
+          </div>
+        </details>
+      </form>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="hidden bg-rose-950/60 border border-rose-800 text-rose-200 px-4 py-3 rounded-xl flex items-center justify-between text-sm">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+        <span id="errorMessage">An error occurred</span>
+      </div>
+      <button onclick="document.getElementById('errorBanner').classList.add('hidden')" class="text-rose-400 hover:text-rose-200"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="hidden py-16 flex flex-col items-center justify-center space-y-4">
+      <div class="relative w-16 h-16">
+        <div class="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-indigo-400">
+          <i class="fa-solid fa-spider"></i>
+        </div>
+      </div>
+      <div class="text-center">
+        <h3 class="text-base font-semibold text-white">Scrapling is fetching and classifying the website...</h3>
+        <p class="text-xs text-slate-400 mt-1" id="loadingTip">Analyzing page structure for Excel table or PDF document generation</p>
+      </div>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer" class="hidden flex-col gap-5">
+
+      <!-- ADAPTIVE INTELLIGENCE BANNER: PDF vs EXCEL DETECTION -->
+      <div id="adaptiveBanner" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1.5 flex-1">
+            <div class="flex items-center space-x-2.5">
+              <span id="adaptiveBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Excel Table Detected
+              </span>
+              <span class="text-xs text-slate-400">Adaptive Intelligence</span>
+            </div>
+            <h3 id="adaptiveHeadline" class="text-base font-bold text-white">Tabular Information Encountered</h3>
+            <p id="adaptiveReason" class="text-xs text-slate-300 leading-relaxed max-w-2xl">
+              Detected HTML tables with structured rows. Generated an Excel workbook (.xlsx) with clean headers, zebra styling, and auto-adjusted column widths.
+            </p>
+          </div>
+
+          <!-- Direct Download Action Buttons -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            <button id="btnDownloadExcel" onclick="downloadServerFile('excel')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-emerald-600/20 transition cursor-pointer">
+              <i class="fa-solid fa-file-excel text-base"></i>
+              <span>Download Excel (.xlsx)</span>
+            </button>
+            <button id="btnDownloadPdf" onclick="downloadServerFile('pdf')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-rose-600/20 transition cursor-pointer">
+              <i class="fa-solid fa-file-pdf text-base"></i>
+              <span>Download PDF (.pdf)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Bar & Summary -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">Status Code</div>
+          <div class="text-xl font-bold mt-1 text-emerald-400 flex items-center space-x-1.5" id="statStatus">
+            <span>200</span>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">Fetch Time</div>
+          <div class="text-xl font-bold mt-1 text-indigo-400" id="statTime">0.0s</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">Word Count</div>
+          <div class="text-xl font-bold mt-1 text-white" id="statWords">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">Headings</div>
+          <div class="text-xl font-bold mt-1 text-sky-400" id="statHeadings">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">Links Found</div>
+          <div class="text-xl font-bold mt-1 text-amber-400" id="statLinks">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400 font-medium">HTML Tables</div>
+          <div class="text-xl font-bold mt-1 text-purple-400" id="statTables">0</div>
+        </div>
+      </div>
+
+      <!-- Action & Export Bar -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
+        <div class="truncate max-w-xl">
+          <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Page Title</div>
+          <div class="text-base font-semibold text-white truncate" id="summaryTitle">-</div>
+          <a id="summaryUrl" href="#" target="_blank" class="text-xs text-indigo-400 hover:underline truncate block font-mono mt-0.5"></a>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+          <button onclick="downloadJson()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-slate-700">
+            <i class="fa-solid fa-file-code text-indigo-400"></i>
+            <span>Export JSON</span>
+          </button>
+          <button onclick="downloadMarkdown()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-slate-700">
+            <i class="fa-brands fa-markdown text-sky-400"></i>
+            <span>Export Markdown</span>
+          </button>
+          <button onclick="downloadLinksCsv()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-slate-700">
+            <i class="fa-solid fa-file-csv text-emerald-400"></i>
+            <span>Export Links CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs Header -->
+      <div class="flex items-center space-x-1 border-b border-slate-800 overflow-x-auto pb-1 text-sm font-medium">
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap active" onclick="switchTab('markdown')">
+          <i class="fa-brands fa-markdown mr-1.5"></i> Markdown & Content
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('tables')">
+          <i class="fa-solid fa-table mr-1.5"></i> Tables (<span id="tablesCountBadge">0</span>)
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('custom')">
+          <i class="fa-solid fa-crosshairs mr-1.5"></i> Custom Query (<span id="customCountBadge">0</span>)
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('links')">
+          <i class="fa-solid fa-link mr-1.5"></i> Links (<span id="linksCountBadge">0</span>)
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('metadata')">
+          <i class="fa-solid fa-tags mr-1.5"></i> Metadata & SEO
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('headings')">
+          <i class="fa-solid fa-heading mr-1.5"></i> Headings Outline
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('images')">
+          <i class="fa-solid fa-image mr-1.5"></i> Images (<span id="imagesCountBadge">0</span>)
+        </button>
+        <button class="tab-btn px-4 py-2.5 rounded-lg border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap" onclick="switchTab('raw')">
+          <i class="fa-solid fa-code mr-1.5"></i> Raw JSON
+        </button>
+      </div>
+
+      <!-- Tab Content Panels -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl min-h-[400px]">
+
+        <!-- Tab: Markdown -->
+        <div id="tab-markdown" class="tab-panel space-y-3">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <span class="text-xs text-slate-400">Clean Markdown extracted via Scrapling's RAG converter</span>
+            <button onclick="copyToClipboard('markdownContent')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition flex items-center space-x-1.5">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy Markdown</span>
+            </button>
+          </div>
+          <pre id="markdownContent" class="custom-scrollbar bg-slate-950 p-4 rounded-xl text-slate-300 text-xs leading-relaxed overflow-x-auto max-h-[600px] whitespace-pre-wrap font-mono select-text"></pre>
+        </div>
+
+        <!-- Tab: Tables -->
+        <div id="tab-tables" class="tab-panel hidden space-y-4">
+          <div class="text-xs text-slate-400">Data tables parsed from the webpage (automatically exported to Excel)</div>
+          <div id="tablesContainer" class="space-y-6"></div>
+        </div>
+
+        <!-- Tab: Custom Matches -->
+        <div id="tab-custom" class="tab-panel hidden space-y-4">
+          <div class="text-xs text-slate-400">Results matched by your custom CSS selector or XPath query</div>
+          <div id="customEmpty" class="text-center py-12 text-slate-500">
+            <i class="fa-solid fa-bullseye text-3xl mb-2"></i>
+            <p>No custom CSS or XPath selector was specified for this scrape.</p>
+            <p class="text-xs text-slate-600 mt-1">Enter a selector in the form above and run again.</p>
+          </div>
+          <div id="customResultsList" class="space-y-3 hidden"></div>
+        </div>
+
+        <!-- Tab: Links -->
+        <div id="tab-links" class="tab-panel hidden space-y-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="relative flex-1 max-w-sm">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text" id="linksFilter" oninput="filterLinks()" placeholder="Search links or anchor text..."
+                class="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+              <button onclick="setLinksCategory('all')" id="filterAll" class="px-2.5 py-1 bg-indigo-600 text-white rounded-lg">All</button>
+              <button onclick="setLinksCategory('internal')" id="filterInternal" class="px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg">Internal</button>
+              <button onclick="setLinksCategory('external')" id="filterExternal" class="px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg">External</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar max-h-[550px]">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="sticky top-0 bg-slate-900 border-b border-slate-800 text-slate-400">
+                <tr>
+                  <th class="py-2 px-3 w-20">Type</th>
+                  <th class="py-2 px-3 w-1/3">Anchor Text</th>
+                  <th class="py-2 px-3">Resolved Destination URL</th>
+                </tr>
+              </thead>
+              <tbody id="linksTableBody" class="divide-y divide-slate-800/60 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Metadata -->
+        <div id="tab-metadata" class="tab-panel hidden space-y-4">
+          <div class="text-xs text-slate-400">Page Meta tags, OpenGraph attributes, and technical attributes</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-950 border-b border-slate-800 text-slate-400">
+                <tr>
+                  <th class="py-2.5 px-4 w-48">Property</th>
+                  <th class="py-2.5 px-4">Value</th>
+                </tr>
+              </thead>
+              <tbody id="metadataTableBody" class="divide-y divide-slate-800/60 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Headings -->
+        <div id="tab-headings" class="tab-panel hidden space-y-3">
+          <div class="text-xs text-slate-400">Document heading hierarchy (H1 to H6)</div>
+          <div id="headingsList" class="space-y-2"></div>
+        </div>
+
+        <!-- Tab: Images -->
+        <div id="tab-images" class="tab-panel hidden space-y-4">
+          <div class="text-xs text-slate-400">All media images discovered on the page</div>
+          <div id="imagesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        </div>
+
+        <!-- Tab: Raw JSON -->
+        <div id="tab-raw" class="tab-panel hidden space-y-3">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <span class="text-xs text-slate-400">Complete JSON object response from Scrapling engine</span>
+            <button onclick="copyToClipboard('rawJsonContent')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition flex items-center space-x-1.5">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy JSON</span>
+            </button>
+          </div>
+          <pre id="rawJsonContent" class="custom-scrollbar bg-slate-950 p-4 rounded-xl text-emerald-400 text-xs overflow-x-auto max-h-[600px] font-mono select-text"></pre>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-600">
+    Built with <span class="text-slate-400 font-medium">Scrapling</span> & FastAPI • Adaptive Excel and PDF Generation
+  </footer>
+
+  <script>
+    let currentScrapeData = null;
+    let linksFilterCategory = 'all';
+
+    function setSample(url, cssSelector) {
+      document.getElementById('targetUrl').value = url;
+      if (cssSelector) {
+        document.getElementById('customCss').value = cssSelector;
+      }
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+
+      const activeBtn = event ? event.currentTarget : document.querySelector(`[onclick="switchTab('${tabName}')"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const targetPanel = document.getElementById(`tab-${tabName}`);
+      if (targetPanel) targetPanel.classList.remove('hidden');
+    }
+
+    document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const url = document.getElementById('targetUrl').value.trim();
+      const mode = document.getElementById('scrapeMode').value;
+      const custom_css = document.getElementById('customCss').value.trim();
+      const export_format = document.getElementById('exportFormatPref').value;
+      const impersonate = document.getElementById('impersonateSig').value;
+
+      // UI Loading state
+      document.getElementById('errorBanner').classList.add('hidden');
+      document.getElementById('resultsContainer').classList.add('hidden');
+      document.getElementById('resultsContainer').classList.remove('flex');
+      document.getElementById('loadingState').classList.remove('hidden');
+
+      const btn = document.getElementById('scrapeBtn');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnText = document.getElementById('btnText');
+      btn.disabled = true;
+      btnIcon.className = 'fa-solid fa-circle-notch fa-spin';
+      btnText.textContent = 'Scraping...';
+
+      try {
+        const response = await fetch('/api/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            mode,
+            custom_css: custom_css || null,
+            export_format,
+            impersonate
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to scrape website');
+        }
+
+        currentScrapeData = data;
+        renderResults(data);
+
+      } catch (err) {
+        document.getElementById('errorMessage').textContent = err.message;
+        document.getElementById('errorBanner').classList.remove('hidden');
+      } finally {
+        document.getElementById('loadingState').classList.add('hidden');
+        btn.disabled = false;
+        btnIcon.className = 'fa-solid fa-bolt';
+        btnText.textContent = 'Scrape Site';
+      }
+    });
+
+    function renderResults(data) {
+      document.getElementById('resultsContainer').classList.remove('hidden');
+      document.getElementById('resultsContainer').classList.add('flex');
+
+      const meta = data.metadata || {};
+      const stats = data.stats || {};
+      const adaptive = data.adaptive_export || {};
+
+      // ADAPTIVE BANNER RENDERING
+      const recFormat = (adaptive.recommended_format || 'pdf').toLowerCase();
+      const contentType = (adaptive.content_type || 'document').toLowerCase();
+
+      const badge = document.getElementById('adaptiveBadge');
+      const headline = document.getElementById('adaptiveHeadline');
+      const reason = document.getElementById('adaptiveReason');
+
+      if (recFormat === 'excel') {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.textContent = 'Excel Table Recommended';
+        headline.textContent = '📊 Tabular / Structured Records Encountered';
+      } else if (recFormat === 'pdf') {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        badge.textContent = 'PDF Document Recommended';
+        headline.textContent = '📄 Editorial / Article Document Encountered';
+      } else {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
+        badge.textContent = 'Hybrid: Both Excel & PDF Created';
+        headline.textContent = '✨ Rich Multi-Format Content Encountered';
+      }
+
+      reason.textContent = adaptive.reason || 'Automatically classified based on website content composition.';
+
+      // Stats
+      document.getElementById('statStatus').innerHTML = `<span>${data.status_code || 200}</span> <span class="text-xs text-slate-400 font-normal">(${data.mode_used})</span>`;
+      document.getElementById('statTime').textContent = `${data.elapsed_seconds}s`;
+      document.getElementById('statWords').textContent = Number(stats.words_count || 0).toLocaleString();
+      document.getElementById('statHeadings').textContent = stats.headings_count || 0;
+      document.getElementById('statLinks').textContent = stats.links_count || 0;
+      document.getElementById('statTables').textContent = stats.tables_count || 0;
+
+      // Summary
+      document.getElementById('summaryTitle').textContent = meta.title || '(No Title Detected)';
+      const summaryUrlEl = document.getElementById('summaryUrl');
+      summaryUrlEl.textContent = data.url;
+      summaryUrlEl.href = data.url;
+
+      // Badges
+      document.getElementById('tablesCountBadge').textContent = (data.tables || []).length;
+      document.getElementById('customCountBadge').textContent = (data.custom_matches || []).length;
+      document.getElementById('linksCountBadge').textContent = (data.links || []).length;
+      document.getElementById('imagesCountBadge').textContent = (data.images || []).length;
+
+      // Markdown
+      document.getElementById('markdownContent').textContent = data.markdown || '(No markdown content extracted)';
+
+      // Tables
+      const tablesCont = document.getElementById('tablesContainer');
+      tablesCont.innerHTML = '';
+      if (data.tables && data.tables.length > 0) {
+        data.tables.forEach((tbl, idx) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'border border-slate-800 rounded-xl overflow-hidden';
+          let tblHtml = `<div class="bg-slate-950 px-4 py-2 border-b border-slate-800 font-semibold text-xs text-emerald-400 flex items-center justify-between"><span>Table #${idx + 1} (${tbl.length} rows)</span> <span class="text-slate-500 font-normal text-[11px]">Included in Excel export</span></div><div class="overflow-x-auto"><table class="w-full text-xs text-left">`;
+          tbl.forEach((row, rIdx) => {
+            const isHeader = rIdx === 0;
+            tblHtml += `<tr class="${isHeader ? 'bg-slate-950 font-bold text-slate-300' : 'hover:bg-slate-950/50 text-slate-400 border-t border-slate-800/60'}">`;
+            row.forEach(cell => {
+              tblHtml += `<td class="py-2 px-3 border-r border-slate-800/40 last:border-0">${escapeHtml(cell)}</td>`;
+            });
+            tblHtml += `</tr>`;
+          });
+          tblHtml += `</table></div>`;
+          wrap.innerHTML = tblHtml;
+          tablesCont.appendChild(wrap);
+        });
+      } else {
+        tablesCont.innerHTML = '<p class="text-slate-500 text-xs py-8 text-center">No HTML tables found on this page.</p>';
+      }
+
+      // Custom Matches
+      const customList = document.getElementById('customResultsList');
+      const customEmpty = document.getElementById('customEmpty');
+      customList.innerHTML = '';
+      if (data.custom_matches && data.custom_matches.length > 0) {
+        customEmpty.classList.add('hidden');
+        customList.classList.remove('hidden');
+
+        data.custom_matches.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2';
+          if (item.error) {
+            div.innerHTML = `<span class="text-rose-400 font-semibold text-xs"><i class="fa-solid fa-circle-exclamation mr-1"></i>${item.error}</span>`;
+          } else {
+            let attrsHtml = '';
+            if (item.attributes && Object.keys(item.attributes).length > 0) {
+              attrsHtml = `<div class="flex flex-wrap gap-1 mt-1 text-[11px]">${Object.entries(item.attributes).map(([k, v]) => `<span class="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-400"><strong class="text-slate-300">${k}:</strong> ${v}</span>`).join('')}</div>`;
+            }
+            div.innerHTML = `
+              <div class="flex items-center justify-between text-xs text-slate-400">
+                <span class="font-bold text-indigo-400">Record #${item.index}</span>
+              </div>
+              <p class="text-slate-200 text-sm font-medium">${escapeHtml(item.text) || '<em class="text-slate-500">[Empty Text]</em>'}</p>
+              ${attrsHtml}
+            `;
+          }
+          customList.appendChild(div);
+        });
+      } else {
+        customEmpty.classList.remove('hidden');
+        customList.classList.add('hidden');
+      }
+
+      // Links Table
+      renderLinksTable(data.links || []);
+
+      // Metadata Table
+      const metaTbody = document.getElementById('metadataTableBody');
+      metaTbody.innerHTML = '';
+      const metaEntries = [
+        ['Page Title', meta.title],
+        ['Description', meta.description],
+        ['Canonical URL', meta.canonical],
+        ['Author', meta.author],
+        ['Keywords', meta.keywords],
+        ['OpenGraph Title (og:title)', meta.og_title],
+        ['OpenGraph Image (og:image)', meta.og_image],
+        ['OpenGraph Type (og:type)', meta.og_type],
+        ['Scraped URL', data.url],
+        ['Fetch Mode', data.mode_used],
+        ['HTTP Status', data.status_code]
+      ];
+      metaEntries.forEach(([prop, val]) => {
+        if (val) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="py-2.5 px-4 font-semibold text-slate-300">${prop}</td>
+            <td class="py-2.5 px-4 text-slate-400 break-all">${escapeHtml(String(val))}</td>
+          `;
+          metaTbody.appendChild(tr);
+        }
+      });
+
+      // Headings Outline
+      const hList = document.getElementById('headingsList');
+      hList.innerHTML = '';
+      if (data.headings && data.headings.length > 0) {
+        data.headings.forEach(h => {
+          const div = document.createElement('div');
+          const indent = (parseInt(h.tag.replace('h', '')) || 1) * 12;
+          div.style.paddingLeft = `${indent}px`;
+          div.className = 'py-1 flex items-center space-x-2 text-xs';
+          div.innerHTML = `
+            <span class="px-1.5 py-0.5 rounded bg-indigo-900/50 text-indigo-300 font-bold uppercase text-[10px] border border-indigo-700/50">${h.tag}</span>
+            <span class="text-slate-200 font-medium">${escapeHtml(h.text)}</span>
+          `;
+          hList.appendChild(div);
+        });
+      } else {
+        hList.innerHTML = '<p class="text-slate-500 text-xs">No HTML headings (h1-h6) detected.</p>';
+      }
+
+      // Images Grid
+      const imgGrid = document.getElementById('imagesGrid');
+      imgGrid.innerHTML = '';
+      if (data.images && data.images.length > 0) {
+        data.images.forEach(img => {
+          const card = document.createElement('div');
+          card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-2 overflow-hidden flex flex-col space-y-2';
+          card.innerHTML = `
+            <div class="h-32 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
+              <img src="${img.src}" alt="${escapeHtml(img.alt || '')}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\'text-slate-600 text-xs\\'>Preview unavailable</span>'">
+            </div>
+            <div class="text-[11px] truncate text-slate-400" title="${escapeHtml(img.alt || 'No alt text')}">
+              ${escapeHtml(img.alt) || '<em class="text-slate-600">No alt text</em>'}
+            </div>
+            <a href="${img.src}" target="_blank" class="text-[10px] text-indigo-400 hover:underline truncate font-mono block">
+              ${img.src}
+            </a>
+          `;
+          imgGrid.appendChild(card);
+        });
+      } else {
+        imgGrid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No images detected on this page.</div>';
+      }
+
+      // Raw JSON
+      document.getElementById('rawJsonContent').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function downloadServerFile(format) {
+      if (!currentScrapeData) return;
+
+      const adaptive = currentScrapeData.adaptive_export || {};
+      let filePath = (format === 'excel') ? adaptive.excel_path : adaptive.pdf_path;
+
+      // If requested file was not generated yet, trigger on-demand generation
+      if (!filePath) {
+        try {
+          const resp = await fetch('/api/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scrape_data: currentScrapeData,
+              format: format
+            })
+          });
+          const expData = await resp.json();
+          filePath = (format === 'excel') ? expData.excel_path : expData.pdf_path;
+        } catch (e) {
+          alert('Failed to generate ' + format + ': ' + e.message);
+          return;
+        }
+      }
+
+      if (filePath) {
+        const filename = filePath.split(/[\\/]/).pop();
+        window.location.href = `/api/download?file=${encodeURIComponent(filename)}`;
+      }
+    }
+
+    function renderLinksTable(links) {
+      const tbody = document.getElementById('linksTableBody');
+      tbody.innerHTML = '';
+
+      const query = (document.getElementById('linksFilter').value || '').toLowerCase();
+
+      const filtered = links.filter(l => {
+        if (linksFilterCategory === 'internal' && !l.is_internal) return false;
+        if (linksFilterCategory === 'external' && l.is_internal) return false;
+        if (query) {
+          return l.text.toLowerCase().includes(query) || l.url.toLowerCase().includes(query);
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="py-6 text-center text-slate-500">No links match filter</td></tr>';
+        return;
+      }
+
+      filtered.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-950/60 transition';
+        const typeBadge = l.is_internal
+          ? '<span class="text-indigo-400 bg-indigo-950/50 border border-indigo-800/60 px-1.5 py-0.5 rounded text-[10px]">Internal</span>'
+          : '<span class="text-amber-400 bg-amber-950/50 border border-amber-800/60 px-1.5 py-0.5 rounded text-[10px]">External</span>';
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3">${typeBadge}</td>
+          <td class="py-2.5 px-3 text-slate-300 truncate max-w-xs font-sans">${escapeHtml(l.text)}</td>
+          <td class="py-2.5 px-3"><a href="${l.url}" target="_blank" class="text-slate-400 hover:text-indigo-400 hover:underline break-all">${l.url}</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterLinks() {
+      if (currentScrapeData) renderLinksTable(currentScrapeData.links || []);
+    }
+
+    function setLinksCategory(cat) {
+      linksFilterCategory = cat;
+      ['All', 'Internal', 'External'].forEach(c => {
+        const btn = document.getElementById(`filter${c}`);
+        if (c.toLowerCase() === cat) {
+          btn.className = 'px-2.5 py-1 bg-indigo-600 text-white rounded-lg';
+        } else {
+          btn.className = 'px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg';
+        }
+      });
+      filterLinks();
+    }
+
+    function copyToClipboard(elemId) {
+      const text = document.getElementById(elemId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+      });
+    }
+
+    function downloadFile(content, fileName, contentType) {
+      const a = document.createElement('a');
+      const file = new Blob([content], { type: contentType });
+      a.href = URL.createObjectURL(file);
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function downloadJson() {
+      if (!currentScrapeData) return;
+      const slug = (currentScrapeData.url || 'data').replace(/[^a-zA-Z0-9]/g, '_');
+      downloadFile(JSON.stringify(currentScrapeData, null, 2), `${slug}.json`, 'application/json');
+    }
+
+    function downloadMarkdown() {
+      if (!currentScrapeData) return;
+      const slug = (currentScrapeData.url || 'data').replace(/[^a-zA-Z0-9]/g, '_');
+      downloadFile(currentScrapeData.markdown || '', `${slug}.md`, 'text/markdown');
+    }
+
+    function downloadLinksCsv() {
+      if (!currentScrapeData || !currentScrapeData.links) return;
+      let csv = 'Anchor Text,Destination URL,Is Internal\n';
+      currentScrapeData.links.forEach(l => {
+        const text = `"${(l.text || '').replace(/"/g, '""')}"`;
+        const url = `"${(l.url || '').replace(/"/g, '""')}"`;
+        csv += `${text},${url},${l.is_internal}\n`;
+      });
+      const slug = (currentScrapeData.url || 'data').replace(/[^a-zA-Z0-9]/g, '_');
+      downloadFile(csv, `${slug}_links.csv`, 'text/csv');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
